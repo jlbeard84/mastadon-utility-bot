@@ -1,5 +1,5 @@
-# mastodon-bot
-Mastodon Bot Template
+# mastodon-utility-bot
+Started via [Mastodon Bot Template](https://github.com/jlbeard84/mastodon-bot)
 
 ## Prerequisites
 
@@ -19,6 +19,4 @@ Mastodon Bot Template
   - `email`: The email account associated with your bot
   - `password`: The password for your bot
 
-## Extending
 
-The included functionality is currently intentionally basic. The bot will respond with one of five random phrases if tagged and follow the user. The hooks are there to extend this functionality however you see fit.
