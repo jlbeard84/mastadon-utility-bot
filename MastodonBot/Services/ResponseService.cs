@@ -1,10 +1,15 @@
 using Microsoft.Extensions.Logging;
 using MastodonBot.Interfaces;
+using MastodonBot.Enums;
+using System.Text.RegularExpressions;
+using MastodonBot.Utilities;
 
 namespace MastodonBot.Services
 {
     public class ResponseService: IResponseService
     {
+        private const string StripHtmlPattern = "<.*?>";
+
         private readonly ILogger<ResponseService> _logger;
         private readonly IRegistrationService _registrationService;
 
@@ -16,55 +21,90 @@ namespace MastodonBot.Services
             _registrationService = registrationService;
         }
 
-        public async Task<string> RespondWithRandomMessage(
+        public async Task ParseAndReply(
+            string originalMessage,
             string replyToAccountName,
             string replyToDisplayName,
             string originalStatusId)
         {
+            var responseTypes = ParseMessage(originalMessage);
+
             var client = await _registrationService.GetMastodonClient();
 
-            var responseMsessage = GetResponseStatusMessage(
-                replyToAccountName, 
-                replyToDisplayName);
+            foreach (var responseType in responseTypes)
+            {
+                var responseMsessage = GetResponseStatusMessage(
+                    responseType,
+                    originalMessage,
+                    replyToAccountName, 
+                    replyToDisplayName);
 
-            var resultStatus = await client.PublishStatus(
-                responseMsessage,
-                replyStatusId: originalStatusId);
+                var resultStatus = await client.PublishStatus(
+                    responseMsessage,
+                    replyStatusId: originalStatusId);
 
-            _logger.LogInformation($"Responded to {replyToAccountName} ({originalStatusId}) with {resultStatus.Id}");
-
-            return resultStatus.Id;
+                _logger.LogInformation($"Responded to {replyToAccountName} ({originalStatusId}) with {resultStatus.Id}");
+            }
         }
 
+        private List<ResponseType> ParseMessage(
+            string message)
+        {
+            message = StripHtml(message);
+
+            var result = new List<ResponseType>();
+
+            foreach (var pattern in ResponseTypeUtility.ResponseTypePatterns)
+            {
+                if (Regex.Match(message, pattern.Pattern)?.Success ?? false)
+                {
+                    result.Add(pattern.ResponseType);
+                }
+            }
+
+            if (!result.Any())
+            {
+                result.Add(ResponseType.Unknown);
+            }
+
+            return result;
+        }
+
+        /// yes this is not optimal
+        private string StripHtml(string message) => Regex.Replace(message, StripHtmlPattern, string.Empty);
+
+
         private string GetResponseStatusMessage(
+            ResponseType responseType,
+            string originalMessage,
             string replyToAccountName,
             string replyToDisplayName)
         {
-            var random = new Random();
-            var instance = random.Next(1, 5);
-
-            var responseMessage = string.Empty;
-
-            switch(instance)
+            switch (responseType)
             {
-                case 1:
-                    responseMessage = $"@{replyToAccountName} Hey {replyToDisplayName}, thanks for the message!";
-                    break;
-                case 2:
-                    responseMessage = $"Yo dawg @{replyToAccountName}!!";
-                    break;
-                case 3:
-                    responseMessage = $"@{replyToAccountName} This is a random response to {replyToDisplayName} from a bot bleep borp.";
-                    break;
-                case 4:
-                   responseMessage = $"@{replyToAccountName}, maybe one day someone will make me do something more interesting than respond with a random message...";
-                    break;
-                case 5:
-                    responseMessage = $"@{replyToAccountName} I know I'm just a proof of concept but at least it works?";
-                    break;
+                case ResponseType.CoinFlip:
+                    return GetCoinFlipResponse();
+                case ResponseType.DiceRoll:
+                    return GetDiceRollResponse();
+                case ResponseType.Unknown:
+                default:
+                    return GetUnknownResponse();
             }
+        }
 
-            return responseMessage;
+        private string GetCoinFlipResponse()
+        {
+            return string.Empty;
+        }
+
+        private string GetDiceRollResponse()
+        {
+            return string.Empty;
+        }
+
+        private string GetUnknownResponse()
+        {
+            return string.Empty;
         }
     }
 }

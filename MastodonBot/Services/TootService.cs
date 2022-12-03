@@ -70,34 +70,32 @@ namespace MastodonBot.Services
 
         private void RegisterDelegates(TimelineStreaming stream)
         {
-            stream.OnUpdate += OnUpdate;
             stream.OnNotification += OnNotificataion;
         }
 
         private void UnregisterDelegates(TimelineStreaming stream)
         {
-            stream.OnUpdate -= OnUpdate;
             stream.OnNotification -= OnNotificataion;
-        }
-
-        private void OnUpdate(object? sender, StreamUpdateEventArgs e)
-        {
-            _logger.LogInformation(e.Status.Content);
         }
 
         private async void OnNotificataion(object? sender, StreamNotificationEventArgs e)
         {
             try
             {
-                if (e.Notification.Type == "mention")
-                {
-                    var message = $"Got message from {e.Notification.Account.AccountName}: {e.Notification.Status.Content}";
-                    _logger.LogInformation(message);
+                var logMessage = $"Got incoming {e.Notification.Type} notification from e.Notification.Account.AccountName";
+                _logger.LogInformation(logMessage);
 
-                    var responseStatusId = await _responseService.RespondWithRandomMessage(
+                if (e.Notification.Type == "follow")
+                {
+                    await _accountService.FollowBack(e.Notification.Account.Id);
+                }
+                else if (e.Notification.Type == "mention")
+                {
+                    await _responseService.ParseAndReply(
+                        e.Notification.Status?.Content ?? string.Empty,
                         e.Notification.Account.AccountName,
                         e.Notification.Account.DisplayName,
-                        e.Notification.Status.Id);
+                        e.Notification.Status?.Id ?? string.Empty);
 
                     await _accountService.FollowBack(e.Notification.Account.Id);
                 }

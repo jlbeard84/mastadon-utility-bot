@@ -2,7 +2,8 @@ namespace MastodonBot.Interfaces
 {
     public interface IResponseService
     {
-         Task<string> RespondWithRandomMessage(
+         Task ParseAndReply(
+            string originalMessage,
             string replyToAccountName,
             string replyToDisplayName,
             string originalStatusId);
