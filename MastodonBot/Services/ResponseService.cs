@@ -56,7 +56,9 @@ namespace MastodonBot.Services
 
             foreach (var pattern in ResponseTypeUtility.ResponseTypePatterns)
             {
-                if (Regex.Match(message, pattern.Pattern)?.Success ?? false)
+                var matches = Regex.Matches(message, pattern.Pattern, RegexOptions.IgnoreCase);
+
+                if (matches.Any())
                 {
                     result.Add(pattern.ResponseType);
                 }
@@ -83,28 +85,54 @@ namespace MastodonBot.Services
             switch (responseType)
             {
                 case ResponseType.CoinFlip:
-                    return GetCoinFlipResponse();
+                    return GetCoinFlipResponse(
+                        replyToAccountName,
+                        replyToDisplayName);
                 case ResponseType.DiceRoll:
-                    return GetDiceRollResponse();
+                    return GetDiceRollResponse(
+                        replyToAccountName,
+                        replyToDisplayName);
                 case ResponseType.Unknown:
                 default:
-                    return GetUnknownResponse();
+                    return GetUnknownResponse(
+                        replyToAccountName);
             }
         }
 
-        private string GetCoinFlipResponse()
+        private string GetCoinFlipResponse(
+            string replyToAccountName,
+            string replyToDisplayName)
         {
-            return string.Empty;
+            var random = new Random();
+
+            var flipResult = random.Next(0, 1) == 0
+                ? "heads"
+                : "tails";
+
+            var result = $"@{replyToAccountName} Hey {replyToDisplayName} you flipped a {flipResult}!";
+
+            return result;
         }
 
-        private string GetDiceRollResponse()
+        private string GetDiceRollResponse(
+            string replyToAccountName,
+            string replyToDisplayName)
         {
-            return string.Empty;
+            var random = new Random();
+
+            var rollResult = random.Next(1, 6);
+
+            var result = $"@{replyToAccountName} Hey {replyToDisplayName} you rolled a {rollResult}!";
+
+            return result;
         }
 
-        private string GetUnknownResponse()
+        private string GetUnknownResponse(
+            string replyToAccountName)
         {
-            return string.Empty;
+            var result = $"@{replyToAccountName} Sorry, I either couldn't figure out what you asked for, or you asked for a feature that I do not support.";
+
+            return result;
         }
     }
 }
